@@ -1,14 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { business, services } from "@/data/site";
 import { useFaqSchema } from "@/lib/seo";
 import {
   CheckIcon,
-  CopyIcon,
   InfoIcon,
   MapPinIcon,
   PhoneIcon,
+  WhatsAppIcon,
 } from "@/components/shared-ui/Icons";
 import { CallButton, Eyebrow, FaqAccordion, PageHeader } from "@/components/shared-ui/ui";
 
@@ -26,8 +26,8 @@ const contactFaqs = [
     a: "Call 862-290-4278 to reach the team. Current availability and scheduling are confirmed when you speak with us.",
   },
   {
-    q: "Why does this form not submit automatically?",
-    a: "This is a frontend-only website with no form-processing service behind it. Rather than show a false confirmation, the helper prepares a summary in your browser so you can copy it or read it over the phone. Nothing is sent or stored by this site.",
+    q: "How does the service request form work?",
+    a: "Submitting the form opens WhatsApp with a formatted message containing your details. Review it and tap Send in WhatsApp. This website does not store your information.",
   },
 ];
 
@@ -42,43 +42,29 @@ export default function Contact() {
     location: "",
     message: "",
   });
-  const [summary, setSummary] = useState("");
-  const [status, setStatus] = useState<"idle" | "copied" | "manual">("idle");
-  const summaryRef = useRef<HTMLTextAreaElement>(null);
-
   const update = (field: keyof typeof form) => (value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
-    setStatus("idle");
   };
 
-  const buildSummary = () => {
-    const lines = [
-      `Service request — ${business.name}`,
-      `Name: ${form.name.trim() || "Not provided"}`,
-      `Phone: ${form.phone.trim() || "Not provided"}`,
-      `Property: ${form.property}`,
-      `Service: ${form.service}`,
-      `Location: ${form.location.trim() || "Not provided"}`,
-      `Details: ${form.message.trim() || "Not provided"}`,
-    ];
-    setSummary(lines.join("\n"));
-    setStatus("idle");
-  };
+  const submitRequest = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const details = [
+      form.name.trim() && `👤 *Name:* ${form.name.trim()}`,
+      form.phone.trim() && `📞 *Phone:* ${form.phone.trim()}`,
+      `🏠 *Property:* ${form.property}`,
+      `🔧 *Service:* ${form.service}`,
+      form.location.trim() && `📍 *Location:* ${form.location.trim()}`,
+      form.message.trim() && `📝 *Details:* ${form.message.trim()}`,
+    ].filter((detail): detail is string => Boolean(detail));
+    const message = [
+      `👋 *New service request for ${business.name}*`,
+      "",
+      ...details,
+    ].join("\n");
 
-  const copySummary = async () => {
-    if (!summary) return;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(summary);
-        setStatus("copied");
-      } else {
-        throw new Error("Clipboard unavailable");
-      }
-    } catch {
-      summaryRef.current?.focus();
-      summaryRef.current?.select();
-      setStatus("manual");
-    }
+    window.location.assign(
+      `https://wa.me/${business.whatsappPhone}?text=${encodeURIComponent(message)}`,
+    );
   };
 
   return (
@@ -164,23 +150,19 @@ export default function Contact() {
           <div id="request-form" className="scroll-mt-24 rounded-[4px] border border-line bg-white p-5 sm:p-7">
             <Eyebrow>Request service</Eyebrow>
             <h2 className="mt-3 text-[1.5rem] font-extrabold leading-tight tracking-[-0.025em] text-navy sm:text-[1.75rem]">
-              Prepare your details, then call.
+              Send your details on WhatsApp.
             </h2>
             <div className="mt-4 flex items-start gap-2.5 rounded-[3px] border border-[#c9d9ee] bg-[#f2f7fd] p-3.5">
               <InfoIcon size={16} className="mt-[2px] flex-none text-blue" />
               <p className="text-[0.8rem] leading-relaxed text-[#2b4362]">
-                This page does not send, store, or submit anything. It builds a summary in your
-                browser that you can copy and use when you call. Nothing is transmitted from this
-                website.
+                Submitting opens WhatsApp with a formatted message containing your details. Review
+                the message and tap Send in WhatsApp; this website does not store your information.
               </p>
             </div>
 
             <form
               className="mt-5 grid gap-4 sm:grid-cols-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                buildSummary();
-              }}
+              onSubmit={submitRequest}
             >
               <div>
                 <label className="field-label" htmlFor="contact-name">
@@ -279,7 +261,8 @@ export default function Contact() {
 
               <div className="sm:col-span-2 flex flex-col gap-2.5 sm:flex-row">
                 <button type="submit" className="btn btn-navy sm:flex-1">
-                  Build my request summary
+                  <WhatsAppIcon size={17} />
+                  Submit
                 </button>
                 <a
                   href={business.phoneHref}
@@ -292,41 +275,6 @@ export default function Contact() {
               </div>
             </form>
 
-            {summary ? (
-              <div className="mt-5 border-t border-line pt-5">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <label htmlFor="contact-summary" className="text-[0.8rem] font-bold uppercase tracking-[0.08em] text-navy">
-                    Your request summary
-                  </label>
-                  <span className="text-[0.7rem] font-medium text-muted">Nothing has been sent</span>
-                </div>
-                <textarea
-                  id="contact-summary"
-                  ref={summaryRef}
-                  readOnly
-                  rows={8}
-                  className="field bg-mist font-sans text-[0.86rem] leading-relaxed"
-                  value={summary}
-                />
-                <div className="mt-2.5 flex flex-col gap-2.5 sm:flex-row">
-                  <button type="button" onClick={copySummary} className="btn btn-outline">
-                    <CopyIcon size={16} />
-                    Copy summary
-                  </button>
-                  <a href={business.phoneHref} className="btn btn-primary">
-                    <PhoneIcon size={16} />
-                    Call and read it out
-                  </a>
-                </div>
-                <p className="mt-2.5 text-[0.75rem] leading-relaxed text-muted" role="status">
-                  {status === "copied"
-                    ? "Copied to your clipboard. Nothing has been sent from this website."
-                    : status === "manual"
-                      ? "Automatic copying was unavailable. Your summary is selected — use your device's copy command."
-                      : "The summary exists only in this browser tab. Use the copy button or read it over the phone."}
-                </p>
-              </div>
-            ) : null}
           </div>
         </div>
       </section>
@@ -337,8 +285,7 @@ export default function Contact() {
             <Eyebrow>Contact questions</Eyebrow>
             <h2 className="h-section mt-3">Before you get in touch.</h2>
             <p className="lede mt-4">
-              Quick answers about reaching the business, coverage, and how the request helper on this
-              page works.
+              Quick answers about reaching the business, coverage, and sending your service request.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <CallButton />
@@ -349,7 +296,7 @@ export default function Contact() {
                   document.getElementById("request-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
                 }
               >
-                Back to the request helper
+                Back to the request form
               </button>
             </div>
           </div>

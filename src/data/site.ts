@@ -11,6 +11,7 @@ export const business = {
   descriptor: "Garage Door Repair",
   phoneDisplay: "862-290-4278",
   phoneHref: "tel:+18622904278",
+  whatsappPhone: "18622904278",
   address: "615 E 26th St, Paterson, NJ 07504",
   areaServed: "New Jersey",
   areaNote:

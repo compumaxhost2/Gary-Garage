@@ -1,7 +1,9 @@
+import { business } from "@/data/site";
+
 export function WhatsAppButton() {
   return (
     <a
-      href="https://wa.me/18622904278"
+      href={`https://wa.me/${business.whatsappPhone}`}
       target="_blank"
       rel="noreferrer"
       aria-label="Message Gary Miller Garage Door Service on WhatsApp"
